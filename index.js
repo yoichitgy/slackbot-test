@@ -1,5 +1,5 @@
 exports.handler = async (event) => {
-    console.log(JSON.stringify(event));
+    console.log('Received event' + JSON.stringify(event));
 
     const challenge = event.challenge;
     if (challenge) {
@@ -7,6 +7,7 @@ exports.handler = async (event) => {
     }
 
     if (!event.event.bot_id && event.event.subtype != 'message_changed') {
+        const text = event.event.text.split(' ')[1]; // Remove a mention part before the space.
         await postMessage('Recieved message: ' + event.event.text, event.event.channel);
     }
 
@@ -56,8 +57,9 @@ async function sendHttpRequest(url, method, headers, body) {
             });
             res.on('end', () => {
                 const r = {
-                    incomingMessage: JSON.stringify(res),
-                    body: JSON.stringify(resBody),
+                    'statusCode': res.statusCode,
+                    'headers': res.headers,
+                    'body': JSON.stringify(resBody),
                 }
                 console.log('Response: ' + JSON.stringify(r));
                 resolve(r);
