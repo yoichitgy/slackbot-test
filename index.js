@@ -2,7 +2,6 @@ const crypto = require('crypto');
 
 // Assumes an event with Lambda Function URLs
 exports.handler = async (event) => {
-    // Log
     console.log('Received an event: ' + JSON.stringify(event));
     const rawBody = event.body;
     const body = JSON.parse(rawBody);
@@ -14,47 +13,33 @@ exports.handler = async (event) => {
         return createChallengeResponse(challenge);
     }
 
-    // Verify signature
-    const secret = process.env['SIGNING_SECRET'];
-    const timestamp = event.headers['x-slack-request-timestamp'];
-    const signature = event.headers['x-slack-signature'];
-    const str = 'v0:' + timestamp + ':' + rawBody;
-    const hash = 'v0=' + crypto.createHmac('sha256', secret).update(str).digest('hex');
-    if (hash !== signature) {
-        console.error('Signature mismatch. From header: ' + signature + ", From secret: " + hash);  
-        return {
-            statusCode: 401
-        };
-    }
-    // Check timestamp is not too old.
-    const current = Math.floor(Date.now() / 1000);
-    if (Math.abs(current - parseInt(timestamp)) > 60 * 5) {
-        console.error('Timestamp differs more than 5 mins. Current timestamp: ' + current);  
+    // Check signature
+    if (!verifyRequestSignature(event.headers, rawBody)) {
         return {
             statusCode: 401
         };
     }
 
-    if (!body.event.bot_id && body.event.subtype != 'message_changed') {
-        const text = body.event.text.split(' ')[1]; // Remove a mention part before the space.
-        await postMessage('Recieved message: ' + body.event.text, body.event.channel);
+    return await handleRequest(body);
+};
+
+async function handleRequest(body) {
+    // Avoid responding to messages from the bot itself and edited messages.
+    if (body.event.bot_id || body.event.subtype == 'message_changed') {
+        console.log('Ignore this event type. Message from the bot itself or edited message.');
+        return {
+            statusCode: 200
+        };
     }
 
+    const text = body.event.text.split(' ')[1]; // Remove a mention part before the space.
+    await postMessage('Echo: ' + text, body.event.channel);
     const response = {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify('Recieved a message from Slackbot.'),
     };
     return response;
-};
-
-function createChallengeResponse(challenge) {
-    const response = {
-        statusCode: 200,
-        headers: { 'Content-Type': 'text/plain' },
-        body: challenge
-    };
-    return response;    
 }
 
 async function postMessage(text, channel) {
@@ -101,4 +86,36 @@ async function sendHttpRequest(url, method, headers, body) {
         req.write(JSON.stringify(body));
         req.end();
     });
+}
+
+function createChallengeResponse(challenge) {
+    const response = {
+        statusCode: 200,
+        headers: { 'Content-Type': 'text/plain' },
+        body: challenge
+    };
+    return response;    
+}
+
+function verifyRequestSignature(headers, rawBody) {
+    const secret = process.env['SIGNING_SECRET'];
+    const timestamp = headers['x-slack-request-timestamp'];
+    const signature = headers['x-slack-signature'];
+
+    // Check timestamp is not too old.
+    const current = Math.floor(Date.now() / 1000);
+    if (Math.abs(current - parseInt(timestamp)) > 60 * 5) {
+        console.error('Timestamp differs more than 5 mins. Current timestamp: ' + current);  
+        return false;
+    }
+
+    // Verify signature
+    const str = 'v0:' + timestamp + ':' + rawBody;
+    const hash = 'v0=' + crypto.createHmac('sha256', secret).update(str).digest('hex');
+    if (hash !== signature) {
+        console.error('Signature mismatch. From header: ' + signature + ", From secret: " + hash);  
+        return false;
+    }
+
+    return true;
 }
