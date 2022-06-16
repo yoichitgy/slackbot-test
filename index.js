@@ -1,14 +1,43 @@
-exports.handler = async (event) => {
-    console.log('Received event' + JSON.stringify(event));
+const crypto = require('crypto');
 
-    const challenge = event.challenge;
+// Assumes an event with Lambda Function URLs
+exports.handler = async (event) => {
+    // Log
+    console.log('Received an event: ' + JSON.stringify(event));
+    const rawBody = event.body;
+    const body = JSON.parse(rawBody);
+    console.log('Parsed body: ' + JSON.stringify(body));
+
+    // Check challenge
+    const challenge = body.challenge;
     if (challenge) {
         return createChallengeResponse(challenge);
     }
 
-    if (!event.event.bot_id && event.event.subtype != 'message_changed') {
-        const text = event.event.text.split(' ')[1]; // Remove a mention part before the space.
-        await postMessage('Recieved message: ' + event.event.text, event.event.channel);
+    // Verify signature
+    const secret = process.env['SIGNING_SECRET'];
+    const timestamp = event.headers['x-slack-request-timestamp'];
+    const signature = event.headers['x-slack-signature'];
+    const str = 'v0:' + timestamp + ':' + rawBody;
+    const hash = 'v0=' + crypto.createHmac('sha256', secret).update(str).digest('hex');
+    if (hash !== signature) {
+        console.error('Signature mismatch. From header: ' + signature + ", From secret: " + hash);  
+        return {
+            statusCode: 401
+        };
+    }
+    // Check timestamp is not too old.
+    const current = Math.floor(Date.now() / 1000);
+    if (Math.abs(current - parseInt(timestamp)) > 60 * 5) {
+        console.error('Timestamp differs more than 5 mins. Current timestamp: ' + current);  
+        return {
+            statusCode: 401
+        };
+    }
+
+    if (!body.event.bot_id && body.event.subtype != 'message_changed') {
+        const text = body.event.text.split(' ')[1]; // Remove a mention part before the space.
+        await postMessage('Recieved message: ' + body.event.text, body.event.channel);
     }
 
     const response = {
