@@ -21,7 +21,14 @@ exports.handler = async (event) => {
         };
     }
 
-    return await handler(body);
+    await handler(body);
+
+    const response = {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify('Recieved a message from Slackbot.'),
+    };
+    return response;
 };
 
 function createChallengeResponse(challenge) {

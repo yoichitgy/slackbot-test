@@ -7,14 +7,65 @@ module.exports = async (body) => {
         };
     }
 
-    const text = body.event.text.split(' ')[1]; // Remove a mention part before the space.
-    await postMessage('Echo: ' + text, body.event.channel);
-    const response = {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify('Recieved a message from Slackbot.'),
-    };
-    return response;
+    const {mention, command, args} = parseText(body.event.text);
+    console.log(`mention: ${mention}, command: ${command}, args: ${args}`);
+
+    let message = '';
+    switch (command) {
+        case 'echo':
+            message = echo(args);
+            break;
+        case 'help':
+            message = help();
+            break;
+        case undefined:
+            message = 'Command is empty. Run `@slackbot-text help`.';
+            break;
+        default:
+            message = 'Unknown command. Run `@slackbot-text help`.';
+    }
+
+    await postMessage(message, body.event.channel);
+}
+
+function parseText(text) {
+    let [mention, ...remainings] = text.split(' ');
+
+    // Remove spaces between mention and command.
+    let spaceCount = 0;
+    for (let i = 0; i < remainings.length; i++) {
+        if (remainings[i] != '') {
+            break;
+        }
+        spaceCount++;
+    }
+    if (spaceCount > 0) {
+        remainings.splice(0, spaceCount);
+    }
+
+    const [command, ...args] = remainings;   
+    return {
+        mention: mention,
+        command: command,
+        args: args
+    }
+}
+
+function echo(args) {
+    if (args.length == 0) {
+        return 'Nothing to echo...';
+    }
+    return args.join(' ');
+}
+
+function help() {
+    const message = `Usage: \`@slackbot-test COMMAND [ARGS...]\`
+
+    Commands:
+      echo\tEcho the remained text.
+      help\tPrint this message.
+    `;
+    return message;
 }
 
 async function postMessage(text, channel) {
