@@ -77,12 +77,13 @@ function lottery(args) {
 }
 
 function help() {
-    const message = `Usage: \`@slackbot-test COMMAND [ARGS...]\`
+    const message = `
+    *Usage:* \`@slackbot-test COMMAND [ARGS...]\`
 
-    Commands:
-      echo\tEcho the remained text. E.g. @slackbot-test echo hello world!
-      help\tPrint this message. E.g. @slackbot-test help
-      lottery\tPick one from space-separated items. E.g. @slackbot-test lottery alice bob chris
+    *Commands:*
+    *echo*  Echo the remained text. E.g. @slackbot-test echo hello world!
+    *help*  Print this message. E.g. @slackbot-test help
+    *lottery*  Pick one from space-separated items. E.g. @slackbot-test lottery alice bob chris
     `;
     return message;
 }
