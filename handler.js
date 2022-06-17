@@ -72,7 +72,7 @@ async function postMessage(text, channel) {
     const url = 'https://slack.com/api/chat.postMessage';
     const headers = {
         'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer ' + process.env['BOT_USER_OAUTH_TOKEN']
+        'Authorization': 'Bearer ' + process.env['SLACK_BOT_USER_OAUTH_TOKEN']
     };
     const data = {
         'channel': channel,

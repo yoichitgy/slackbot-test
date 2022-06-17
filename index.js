@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const handler = require('./handler');
+const secretsManager = require('./secretsManager');
   
 // Assumes an event with Lambda Function URLs
 exports.handler = async (event) => {
@@ -7,6 +8,13 @@ exports.handler = async (event) => {
     const rawBody = event.body;
     const body = JSON.parse(rawBody);
     console.log('Parsed body: ' + JSON.stringify(body));
+
+    // Store secrets to environment.
+    const secretId = process.env['SECRET_ID'];
+    const region = process.env['SECRET_MANAGER_REGION'];
+    const secrets = await secretsManager(secretId, region);
+    process.env['SLACK_SIGNING_SECRET'] = secrets['SLACK_SIGNING_SECRET'];
+    process.env['SLACK_BOT_USER_OAUTH_TOKEN'] = secrets['SLACK_BOT_USER_OAUTH_TOKEN'];
 
     // Check challenge
     const challenge = body.challenge;
@@ -41,7 +49,7 @@ function createChallengeResponse(challenge) {
 }
 
 function verifyRequestSignature(headers, rawBody) {
-    const secret = process.env['SIGNING_SECRET'];
+    const secret = process.env['SLACK_SIGNING_SECRET'];
     const timestamp = headers['x-slack-request-timestamp'];
     const signature = headers['x-slack-signature'];
 
