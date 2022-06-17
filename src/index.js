@@ -29,6 +29,13 @@ exports.handler = async (event) => {
         };
     }
 
+    // Igore retries. Retry should be done by a human.
+    if (event.headers["x-slack-retry-num"]) {
+        return {
+            statusCode: 204 // No content
+        };
+    }
+
     await handler(body);
 
     const response = {
