@@ -15,6 +15,9 @@ module.exports = async (body) => {
         case 'echo':
             message = echo(args);
             break;
+        case 'lottery':
+            message = lottery(args);
+            break;
         case 'help':
             message = help();
             break;
@@ -34,7 +37,7 @@ function parseText(text) {
     // Remove spaces between mention and command.
     let spaceCount = 0;
     for (let i = 0; i < remainings.length; i++) {
-        if (remainings[i] != '') {
+        if (remainings[i] !== '') {
             break;
         }
         spaceCount++;
@@ -58,12 +61,28 @@ function echo(args) {
     return args.join(' ');
 }
 
+function lottery(args) {
+    const candidates = args.filter(a => a !== '');
+    if (candidates.length == 0) {
+        return 'We have no one joined the lottery.';
+    }
+
+    const winnerIndex = Math.floor(Math.random() * candidates.length);
+    const winner = candidates[winnerIndex];
+    return `
+        Candidates: ${candidates}
+
+        ${winner} won the lottery!!!
+    `
+}
+
 function help() {
     const message = `Usage: \`@slackbot-test COMMAND [ARGS...]\`
 
     Commands:
-      echo\tEcho the remained text.
-      help\tPrint this message.
+      echo\tEcho the remained text. E.g. @slackbot-test echo hello world!
+      help\tPrint this message. E.g. @slackbot-test help
+      lottery\tPick one from space-separated items. E.g. @slackbot-test lottery alice bob chris
     `;
     return message;
 }
