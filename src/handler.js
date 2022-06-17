@@ -28,7 +28,7 @@ module.exports = async (body) => {
             message = 'Unknown command. Run `@slackbot-text help`.';
     }
 
-    await postMessage(message, body.event.channel);
+    await postMessage(message, body.event.channel, body.event.ts);
 }
 
 function parseText(text) {
@@ -87,7 +87,7 @@ function help() {
     return message;
 }
 
-async function postMessage(text, channel) {
+async function postMessage(text, channel, ts) {
     const url = 'https://slack.com/api/chat.postMessage';
     const headers = {
         'Content-Type': 'application/json; charset=UTF-8',
@@ -95,6 +95,7 @@ async function postMessage(text, channel) {
     };
     const data = {
         'channel': channel,
+        'thread_ts': ts,
         'text': text
     }
     await sendHttpRequest(url, 'POST', headers, data);
