@@ -17,9 +17,8 @@ exports.handler = async (event) => {
     process.env['SLACK_BOT_USER_OAUTH_TOKEN'] = secrets['SLACK_BOT_USER_OAUTH_TOKEN'];
 
     // Check challenge
-    const challenge = body.challenge;
-    if (challenge) {
-        return createChallengeResponse(challenge);
+    if (body.challenge) {
+        return createChallengeResponse(body.challenge);
     }
 
     // Check signature
